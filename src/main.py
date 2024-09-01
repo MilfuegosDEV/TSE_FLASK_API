@@ -4,7 +4,7 @@ from flask import Flask, jsonify
 app = Flask(__name__)
 flask_cors.CORS(app)
 
-from webscrapper import WebScraper
+from src.webscrapper import WebScraper
 
 scraper = WebScraper()
 
