@@ -100,4 +100,9 @@ def cedula(id):
 
 
 if __name__ == "__main__":
-    serve(app, host="localhost", port=5000)
+    mode = "prod"
+
+    if mode == "dev":
+        app.run(debug=True)
+    else:
+        serve(app, host="3.125.183.140", port=8080)
