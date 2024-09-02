@@ -1,17 +1,20 @@
 from bs4 import BeautifulSoup
-
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-import asyncio
+
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from waitress import serve
 
 
-class WebScraper:
+class WebScrapper:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument("start-maximized")  # open Browser in maximized mode
         options.add_argument("disable-infobars")  # disabling infobars
+        options.add_argument("--log-level=1")  # disabling logs
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-gpu")  # applicable to windows os only
         options.add_argument("--disable-dev-shm-usage")
@@ -27,7 +30,7 @@ class WebScraper:
             self.driver.get(
                 "https://servicioselectorales.tse.go.cr/chc/consulta_cedula.aspx"
             )
-            wait = WebDriverWait(self.driver, 10)
+            wait = WebDriverWait(self.driver, 1)
             wait.until(lambda driver: driver.find_element(By.NAME, "txtcedula"))
             search_box = self.driver.find_element("name", "txtcedula")
             search_box.send_keys(x)
@@ -60,7 +63,6 @@ class WebScraper:
                 "nombre": lblname,
                 "nacimiento": lblnacimiento,
             }
-            print(response)
             return response
         except:
             return {
@@ -73,28 +75,29 @@ class WebScraper:
         self.driver.quit()
 
 
-# def get_data(x):
-#     driver = webdriver.Chrome()
-#     driver.get("https://servicioselectorales.tse.go.cr/chc/consulta_cedula.aspx")
-#     search_box = driver.find_element("name", "txtcedula")
-#     search_box.send_keys(x)  # retrieve response
-#     search_box.send_keys(Keys.RETURN)
-#     html = driver.page_source
-#     lblcedula = (
-#         BeautifulSoup(html, "html.parser").find("span", {"id": "lblcedula"}).text
-#     )
-#     lblname = (
-#         BeautifulSoup(html, "html.parser")
-#         .find("span", {"id": "lblnombrecompleto"})
-#         .text
-#     )
-#     lblnacimiento = (
-#         BeautifulSoup(html, "html.parser")
-#         .find("span", {"id": "lblfechaNacimiento"})
-#         .text
-#     )
-#     return {
-#         "cedula": lblcedula,
-#         "nombre": lblname,
-#         "nacimiento": lblnacimiento,
-#     }
+app = Flask(__name__)
+scrapper = WebScrapper()
+CORS(app)
+app.config["ENV"] = "production"
+
+
+@app.route("/", methods=["GET"])
+def home():
+    return "<h1>Flask API</h1><p>This site is a prototype API for distant reading of science fiction novels.</p>"
+
+
+@app.route("/api", methods=["GET"])
+def api():
+    return jsonify({"message": "Welcome to the API", "status": 200, "data": []})
+
+
+@app.route("/api/cedula/<id>", methods=["GET"])
+def cedula(id):
+    try:
+        return jsonify(scrapper.get_data(id))
+    except:
+        return jsonify({"message": "Error", "status": 500, "data": []})
+
+
+if __name__ == "__main__":
+    serve(app, host="localhost", port=5000)
